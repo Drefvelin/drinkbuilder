@@ -176,12 +176,24 @@ public final class PackPullRunner {
 				}
 
 				if (!ackImmediate.isEmpty()) {
+					final List<String> ackIds = List.copyOf(ackImmediate);
 					Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-						AppliedResult result = ProvinceSystemClient.markApplied(ackImmediate);
+						AppliedResult result = ProvinceSystemClient.markApplied(ackIds);
 						Bukkit.getScheduler().runTask(plugin, () -> {
 							if (!result.ok) {
 								plugin.getLogger().warning(
 									"[pack] immediate applied ack failed: " + result.error
+								);
+							} else if (result.applied.size() < ackIds.size()) {
+								plugin.getLogger().warning(
+									"[pack] applied ack partial: requested="
+										+ ackIds.size()
+										+ " marked="
+										+ result.applied.size()
+										+ " ids="
+										+ ackIds
+										+ " applied="
+										+ result.applied
 								);
 							} else {
 								plugin.getLogger().info(
