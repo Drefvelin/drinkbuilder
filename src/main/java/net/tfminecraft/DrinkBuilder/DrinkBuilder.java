@@ -19,6 +19,7 @@ import net.tfminecraft.DrinkBuilder.pack.CmdAllocator;
 import net.tfminecraft.DrinkBuilder.pack.DeferredDrinkIaReload;
 import net.tfminecraft.DrinkBuilder.pack.IaDrinksScaffold;
 import net.tfminecraft.DrinkBuilder.pack.ItemsAdderPackListener;
+import net.tfminecraft.DrinkBuilder.pack.PackPullScheduler;
 import net.tfminecraft.DrinkBuilder.pack.PendingReloadQueue;
 
 public class DrinkBuilder extends JavaPlugin {
@@ -33,6 +34,7 @@ public class DrinkBuilder extends JavaPlugin {
 	private CmdAllocator cmdAllocator;
 	private PendingReloadQueue pendingReloadQueue;
 	private DeferredDrinkIaReload deferredIaReload;
+	private PackPullScheduler packPullScheduler;
 
 	@Override
 	public void onEnable() {
@@ -48,6 +50,8 @@ public class DrinkBuilder extends JavaPlugin {
 		pendingReloadQueue = new PendingReloadQueue(this);
 		pendingReloadQueue.load();
 		deferredIaReload = new DeferredDrinkIaReload(this, pendingReloadQueue);
+		packPullScheduler = new PackPullScheduler(this);
+		packPullScheduler.start();
 
 		IaDrinksScaffold.ensure(this);
 
@@ -82,6 +86,10 @@ public class DrinkBuilder extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
+		if (packPullScheduler != null) {
+			packPullScheduler.stop();
+			packPullScheduler = null;
+		}
 		plugin = null;
 	}
 
@@ -103,6 +111,9 @@ public class DrinkBuilder extends JavaPlugin {
 		);
 		if (cmdAllocator != null) {
 			cmdAllocator.reloadBounds();
+		}
+		if (packPullScheduler != null) {
+			packPullScheduler.start();
 		}
 		IaDrinksScaffold.ensure(this);
 	}

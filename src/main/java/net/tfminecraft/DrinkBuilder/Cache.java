@@ -31,6 +31,12 @@ public final class Cache {
 	/** Seconds between iareload and iazip (ArmourShop-style). */
 	public static int iaReloadDelaySeconds = 8;
 
+	/** Passive pull interval; 0 disables periodic poll. */
+	public static int packPollIntervalSeconds = 120;
+
+	/** Daily HH:mm force pull; empty disables. */
+	public static String forceReloadTime = "06:00";
+
 	private Cache() {}
 
 	public static final class Ingredient {

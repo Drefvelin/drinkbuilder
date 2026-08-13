@@ -133,11 +133,8 @@ public final class DeferredDrinkIaReload implements Listener {
 			if (!Bukkit.getOnlinePlayers().isEmpty()) {
 				return;
 			}
-			if (queue.isEmpty()) {
-				return;
-			}
-			plugin.getLogger().info("[pack] server empty — flushing drink IA reload");
-			requestFlush(false);
+			plugin.getLogger().info("[pack] server empty — running drink pack pull");
+			PackPullRunner.run(false, null);
 		});
 	}
 

@@ -40,5 +40,13 @@ public final class ConfigLoader {
 		}
 
 		Cache.iaReloadDelaySeconds = Math.max(0, config.getInt("ia-reload-delay-seconds", 8));
+
+		Cache.packPollIntervalSeconds = config.getInt("pack-apply.poll-interval-seconds", 120);
+		if (Cache.packPollIntervalSeconds < 0) {
+			Cache.packPollIntervalSeconds = 0;
+		}
+
+		String forceTime = config.getString("pack-apply.force-reload-time", "06:00");
+		Cache.forceReloadTime = forceTime == null ? "" : forceTime.trim();
 	}
 }
