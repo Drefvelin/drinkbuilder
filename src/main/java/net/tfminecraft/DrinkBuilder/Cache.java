@@ -13,9 +13,6 @@ import net.tfminecraft.DrinkBuilder.objects.PermissionGroupDefinition;
  */
 public final class Cache {
 
-	public static String apiBaseUrl = "";
-	public static String pluginKey = "";
-
 	public static String breweryxFolder = "plugins/BreweryX";
 	public static String itemsAdderTfmcDrinks = "plugins/ItemsAdder/contents/tfmc_drinks";
 

@@ -18,7 +18,6 @@ import net.tfminecraft.DrinkBuilder.DrinkBuilder;
 import net.tfminecraft.DrinkBuilder.api.ProvinceSystemClient.CatalogPushResult;
 import net.tfminecraft.DrinkBuilder.catalog.AssetSyncService;
 import net.tfminecraft.DrinkBuilder.catalog.CatalogSyncService;
-import net.tfminecraft.DrinkBuilder.entitlements.PlayerMetaSyncService;
 import net.tfminecraft.DrinkBuilder.pack.DeletableDrinkCache;
 import net.tfminecraft.DrinkBuilder.pack.DrinkDeleteRunner;
 import net.tfminecraft.DrinkBuilder.pack.PackPullRunner;
@@ -56,7 +55,6 @@ public final class CommandManager implements CommandExecutor, TabCompleter {
 				+ "Next CMD: " + plugin.getCmdAllocator().peekNext());
 			CatalogSyncService.pushAsync(plugin);
 			AssetSyncService.pushAsync(plugin);
-			PlayerMetaSyncService.pushAllOnlineAsync();
 			return true;
 		}
 

@@ -4,9 +4,8 @@ name: DrinkBuilder
 version: 1.0
 author: TFMC
 
-depend: [TLibs]
+depend: [TLibs, TFMCWeb]
 softdepend: [ItemsAdder]
-
 commands:
   drinkbuilder:
     usage: /drinkbuilder reload|catalog sync|pack pull [force]|drink delete <id>

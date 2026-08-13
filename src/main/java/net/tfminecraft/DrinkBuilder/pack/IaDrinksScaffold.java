@@ -7,10 +7,8 @@ import java.nio.file.Files;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
-import net.tfminecraft.DrinkBuilder.Cache;
-
 /**
- * Ensure an empty ItemsAdder tfmc_drinks namespace scaffold exists on disk.
+ * Ensure an empty ItemsAdder drinks namespace scaffold exists on disk.
  */
 public final class IaDrinksScaffold {
 
@@ -20,14 +18,11 @@ public final class IaDrinksScaffold {
 		if (plugin == null) {
 			return;
 		}
-		String configured = Cache.itemsAdderTfmcDrinks;
-		if (configured == null || configured.isBlank()) {
-			return;
-		}
-		File root = resolvePath(plugin, configured.trim());
+		String ns = DrinksNamespace.current();
+		File root = IaDrinksWriter.resolveDrinksRoot(plugin);
 		File configs = new File(root, "configs");
 		File itemsYml = new File(configs, "items.yml");
-		File textures = new File(root, "resourcepack/tfmc_drinks/textures/item");
+		File textures = new File(root, "resourcepack/" + ns + "/textures/item");
 
 		try {
 			if (!configs.exists() && !configs.mkdirs()) {
@@ -39,11 +34,11 @@ public final class IaDrinksScaffold {
 			if (!itemsYml.exists()) {
 				String body = ""
 					+ "info:\n"
-					+ "  namespace: tfmc_drinks\n"
+					+ "  namespace: " + ns + "\n"
 					+ "items: {}\n";
 				Files.writeString(itemsYml.toPath(), body, StandardCharsets.UTF_8);
 				plugin.getLogger().info(
-					"[ia] wrote empty tfmc_drinks scaffold: " + itemsYml.getAbsolutePath()
+					"[ia] wrote empty " + ns + " scaffold: " + itemsYml.getAbsolutePath()
 				);
 			}
 			if (!textures.exists() && !textures.mkdirs()) {
@@ -54,20 +49,5 @@ public final class IaDrinksScaffold {
 		} catch (IOException e) {
 			plugin.getLogger().warning("[ia] scaffold failed: " + e.getMessage());
 		}
-	}
-
-	private static File resolvePath(JavaPlugin plugin, String configured) {
-		File asIs = new File(configured);
-		if (asIs.isAbsolute()) {
-			return asIs;
-		}
-		File serverRoot = plugin.getDataFolder().getParentFile();
-		if (serverRoot != null) {
-			serverRoot = serverRoot.getParentFile();
-		}
-		if (serverRoot == null) {
-			return asIs;
-		}
-		return new File(serverRoot, configured);
 	}
 }

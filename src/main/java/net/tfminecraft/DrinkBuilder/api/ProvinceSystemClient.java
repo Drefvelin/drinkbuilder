@@ -1,12 +1,5 @@
 package net.tfminecraft.DrinkBuilder.api;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,12 +15,10 @@ import com.google.gson.JsonParser;
 import net.tfminecraft.DrinkBuilder.Cache;
 
 /**
- * HTTP client for ProvinceSystem drink plugin routes.
+ * Drink plugin routes via TFMCWeb {@link GatewayClient}.
  */
 public final class ProvinceSystemClient {
 
-	private static final int TIMEOUT_MS = 8000;
-	private static final int DOWNLOAD_TIMEOUT_MS = 30000;
 	private static final Gson GSON = new Gson();
 
 	private ProvinceSystemClient() {}
@@ -215,10 +206,6 @@ public final class ProvinceSystemClient {
 		return CatalogPushResult.success(count, updatedAt);
 	}
 
-	public static SimpleResult pushPlayerMeta(String jsonBody) {
-		return putJson("/drinks/plugin/player-meta", jsonBody);
-	}
-
 	/**
 	 * Upload a drink creator asset PNG (glass_bottle.png / potion_overlay.png).
 	 */
@@ -230,12 +217,13 @@ public final class ProvinceSystemClient {
 		return putBytes("/drinks/plugin/assets/" + name, pngBytes, "image/png");
 	}
 
+	/** GET /drinks/plugin/pending-apply — realm injected by TFMCWeb gateway. */
 	public static ListResult listPendingApply() {
-		SimpleResult raw = getJson("/drinks/plugin/pending-apply");
-		if (!raw.ok) {
-			return ListResult.fail(raw.error);
-		}
 		try {
+			SimpleResult raw = getJson("/drinks/plugin/pending-apply");
+			if (!raw.ok) {
+				return ListResult.fail(raw.error);
+			}
 			return ListResult.success(parsePendingDrinks(raw.body));
 		} catch (Exception e) {
 			return ListResult.fail("Bad pending-apply payload: " + e.getMessage());
@@ -596,175 +584,56 @@ public final class ProvinceSystemClient {
 	}
 
 	private static SimpleResult getJson(String path) {
-		return request("GET", path, null, false);
+		return request("GET", path, null);
 	}
 
 	private static SimpleResult putJson(String path, String jsonBody) {
-		return request("PUT", path, jsonBody, false);
+		return request("PUT", path, jsonBody);
 	}
 
 	private static SimpleResult putBytes(String path, byte[] body, String contentType) {
-		String base = Cache.apiBaseUrl;
-		String key = Cache.pluginKey;
-		if (base == null || base.isEmpty() || key == null || key.isEmpty()) {
-			return SimpleResult.fail(
-				"API is not configured (api.base-url / api.plugin-key in config.yml)."
-			);
-		}
 		if (body == null || body.length == 0) {
 			return SimpleResult.fail("Payload is empty.");
 		}
-		HttpURLConnection connection = null;
-		try {
-			@SuppressWarnings("deprecation")
-			URL url = new URL(base + path);
-			connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod("PUT");
-			connection.setConnectTimeout(TIMEOUT_MS);
-			connection.setReadTimeout(DOWNLOAD_TIMEOUT_MS);
-			connection.setRequestProperty("X-Plugin-Key", key);
-			connection.setRequestProperty("Accept", "application/json");
-			connection.setDoOutput(true);
-			connection.setRequestProperty(
-				"Content-Type",
-				contentType == null || contentType.isBlank()
-					? "application/octet-stream"
-					: contentType
-			);
-			connection.setFixedLengthStreamingMode(body.length);
-			try (OutputStream out = connection.getOutputStream()) {
-				out.write(body);
-			}
-
-			int status = connection.getResponseCode();
-			String response = readBody(
-				status >= 200 && status < 300
-					? connection.getInputStream()
-					: connection.getErrorStream()
-			);
-			if (status >= 200 && status < 300) {
-				return SimpleResult.success(response);
-			}
-			return SimpleResult.fail(detailOrHttp(response, status));
-		} catch (Exception e) {
-			return SimpleResult.fail("Could not reach API: " + e.getMessage());
-		} finally {
-			if (connection != null) {
-				connection.disconnect();
-			}
+		GatewayClient.Result raw = GatewayClient.requestBytes(
+			"PUT",
+			path,
+			body,
+			contentType == null || contentType.isBlank()
+				? "application/octet-stream"
+				: contentType
+		);
+		if (raw.ok) {
+			return SimpleResult.success(raw.body);
 		}
+		return SimpleResult.fail(raw.error);
 	}
 
 	private static SimpleResult postJson(String path, String jsonBody) {
-		return request("POST", path, jsonBody, false);
+		return request("POST", path, jsonBody);
 	}
 
 	private static DownloadResult getBytes(String path) {
-		String base = Cache.apiBaseUrl;
-		String key = Cache.pluginKey;
-		if (base == null || base.isEmpty() || key == null || key.isEmpty()) {
-			return DownloadResult.fail(
-				"API is not configured (api.base-url / api.plugin-key in config.yml)."
-			);
+		GatewayClient.BytesDownload dl = GatewayClient.download(path);
+		if (!dl.ok) {
+			return DownloadResult.fail(dl.error);
 		}
-		HttpURLConnection connection = null;
-		try {
-			@SuppressWarnings("deprecation")
-			URL url = new URL(base + path);
-			connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod("GET");
-			connection.setConnectTimeout(TIMEOUT_MS);
-			connection.setReadTimeout(DOWNLOAD_TIMEOUT_MS);
-			connection.setRequestProperty("X-Plugin-Key", key);
-
-			int status = connection.getResponseCode();
-			if (status == 200) {
-				byte[] data = readBytes(connection.getInputStream());
-				if (data == null || data.length == 0) {
-					return DownloadResult.fail("Empty file download");
-				}
-				return DownloadResult.success(data);
-			}
-			String response = readBody(connection.getErrorStream());
-			return DownloadResult.fail(detailOrHttp(response, status));
-		} catch (Exception e) {
-			return DownloadResult.fail("Could not download: " + e.getMessage());
-		} finally {
-			if (connection != null) {
-				connection.disconnect();
-			}
+		if (dl.data == null || dl.data.length == 0) {
+			return DownloadResult.fail("Empty file download");
 		}
+		return DownloadResult.success(dl.data);
 	}
 
-	private static SimpleResult request(
-		String method,
-		String path,
-		String jsonBody,
-		boolean unused
-	) {
-		String base = Cache.apiBaseUrl;
-		String key = Cache.pluginKey;
-		if (base == null || base.isEmpty() || key == null || key.isEmpty()) {
-			return SimpleResult.fail(
-				"API is not configured (api.base-url / api.plugin-key in config.yml)."
-			);
-		}
+	private static SimpleResult request(String method, String path, String jsonBody) {
 		if (("PUT".equals(method) || "POST".equals(method))
 			&& (jsonBody == null || jsonBody.isBlank())) {
 			return SimpleResult.fail("Payload is empty.");
 		}
-
-		HttpURLConnection connection = null;
-		try {
-			@SuppressWarnings("deprecation")
-			URL url = new URL(base + path);
-			connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod(method);
-			connection.setConnectTimeout(TIMEOUT_MS);
-			connection.setReadTimeout(TIMEOUT_MS);
-			connection.setRequestProperty("X-Plugin-Key", key);
-			connection.setRequestProperty("Accept", "application/json");
-
-			if (jsonBody != null) {
-				connection.setDoOutput(true);
-				connection.setRequestProperty("Content-Type", "application/json");
-				byte[] bytes = jsonBody.getBytes(StandardCharsets.UTF_8);
-				connection.setFixedLengthStreamingMode(bytes.length);
-				try (OutputStream out = connection.getOutputStream()) {
-					out.write(bytes);
-				}
-			}
-
-			int status = connection.getResponseCode();
-			String response = readBody(
-				status >= 200 && status < 300
-					? connection.getInputStream()
-					: connection.getErrorStream()
-			);
-			if (status >= 200 && status < 300) {
-				return SimpleResult.success(response);
-			}
-			return SimpleResult.fail(detailOrHttp(response, status));
-		} catch (Exception e) {
-			return SimpleResult.fail("Could not reach API: " + e.getMessage());
-		} finally {
-			if (connection != null) {
-				connection.disconnect();
-			}
+		GatewayClient.Result raw = GatewayClient.request(method, path, jsonBody);
+		if (raw.ok) {
+			return SimpleResult.success(raw.body);
 		}
-	}
-
-	private static String detailOrHttp(String response, int status) {
-		String detail = jsonString(response, "detail");
-		if (detail == null || detail.isEmpty()) {
-			detail = response == null || response.isEmpty()
-				? ("HTTP " + status)
-				: response;
-		}
-		if (status == 401) {
-			return "Unauthorized (check api.plugin-key). " + detail;
-		}
-		return detail;
+		return SimpleResult.fail(raw.error);
 	}
 
 	static String escapeJson(String value) {
@@ -827,34 +696,5 @@ public final class ProvinceSystemClient {
 			i++;
 		}
 		return json.substring(start, i).trim();
-	}
-
-	private static String readBody(InputStream stream) throws Exception {
-		if (stream == null) {
-			return "";
-		}
-		StringBuilder sb = new StringBuilder();
-		try (BufferedReader in = new BufferedReader(
-			new InputStreamReader(stream, StandardCharsets.UTF_8)
-		)) {
-			String line;
-			while ((line = in.readLine()) != null) {
-				sb.append(line);
-			}
-		}
-		return sb.toString();
-	}
-
-	private static byte[] readBytes(InputStream stream) throws Exception {
-		if (stream == null) {
-			return new byte[0];
-		}
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		byte[] buf = new byte[8192];
-		int n;
-		while ((n = stream.read(buf)) >= 0) {
-			out.write(buf, 0, n);
-		}
-		return out.toByteArray();
 	}
 }

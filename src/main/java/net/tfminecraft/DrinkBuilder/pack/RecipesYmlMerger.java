@@ -300,9 +300,16 @@ public final class RecipesYmlMerger {
 		if (good.isEmpty()) {
 			good = display;
 		}
-		List<String> badColours = colourList(recipe.get("name_bad_colours"));
+		// One colour set for all qualities; optional per-quality lists are legacy fallbacks.
 		List<String> normalColours = colourList(recipe.get("name_colours"));
+		List<String> badColours = colourList(recipe.get("name_bad_colours"));
 		List<String> goodColours = colourList(recipe.get("name_good_colours"));
+		if (badColours.isEmpty()) {
+			badColours = normalColours;
+		}
+		if (goodColours.isEmpty()) {
+			goodColours = normalColours;
+		}
 		return bakeColourStops(bad, badColours)
 			+ "/"
 			+ bakeColourStops(normal, normalColours)

@@ -17,7 +17,7 @@ import net.tfminecraft.DrinkBuilder.api.ProvinceSystemClient.PendingDrink;
 import net.tfminecraft.DrinkBuilder.api.ProvinceSystemClient.SimpleResult;
 
 /**
- * Write potion PNG + ItemsAdder item entry under tfmc_drinks.
+ * Write potion PNG + ItemsAdder item entry under the realm drinks namespace.
  */
 public final class IaDrinksWriter {
 
@@ -53,9 +53,10 @@ public final class IaDrinksWriter {
 			throw new IOException("download texture.png: " + dl.error);
 		}
 
+		String ns = DrinksNamespace.current();
 		IaDrinksScaffold.ensure(plugin);
-		File root = resolvePath(plugin, Cache.itemsAdderTfmcDrinks);
-		File texDir = new File(root, "resourcepack/tfmc_drinks/textures/item");
+		File root = resolveDrinksRoot(plugin);
+		File texDir = new File(root, "resourcepack/" + ns + "/textures/item");
 		if (!texDir.exists() && !texDir.mkdirs()) {
 			throw new IOException("could not create textures dir: " + texDir);
 		}
@@ -63,14 +64,14 @@ public final class IaDrinksWriter {
 		Files.write(png.toPath(), dl.data);
 
 		int cmd = allocator.allocate();
-		String iaItemId = "tfmc_drinks:" + sid;
+		String iaItemId = ns + ":" + sid;
 
 		File itemsYml = new File(root, "configs/items.yml");
 		FileConfiguration yaml = itemsYml.exists()
 			? YamlConfiguration.loadConfiguration(itemsYml)
 			: new YamlConfiguration();
 		if (!yaml.isConfigurationSection("info")) {
-			yaml.set("info.namespace", "tfmc_drinks");
+			yaml.set("info.namespace", ns);
 		}
 		ConfigurationSection items = yaml.getConfigurationSection("items");
 		if (items == null) {
@@ -98,8 +99,25 @@ public final class IaDrinksWriter {
 		return new WriteResult(cmd, iaItemId);
 	}
 
+	/** Resolve ItemsAdder contents folder for the current realm drinks namespace. */
+	public static File resolveDrinksRoot(JavaPlugin plugin) {
+		File configured = resolvePath(plugin, Cache.itemsAdderTfmcDrinks);
+		String ns = DrinksNamespace.current();
+		if (DrinksNamespace.MAIN.equals(ns)) {
+			return configured;
+		}
+		File parent = configured.getParentFile();
+		if (parent == null) {
+			return new File(ns);
+		}
+		return new File(parent, ns);
+	}
+
 	static File resolvePath(JavaPlugin plugin, String configured) {
-		File asIs = new File(configured == null ? "" : configured);
+		if (configured == null || configured.isBlank()) {
+			configured = "plugins/ItemsAdder/contents/tfmc_drinks";
+		}
+		File asIs = new File(configured.trim());
 		if (asIs.isAbsolute()) {
 			return asIs;
 		}
@@ -110,6 +128,6 @@ public final class IaDrinksWriter {
 		if (serverRoot == null) {
 			return asIs;
 		}
-		return new File(serverRoot, configured);
+		return new File(serverRoot, configured.trim());
 	}
 }

@@ -10,10 +10,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import net.tfminecraft.DrinkBuilder.Cache;
-
 /**
- * Remove a tfmc_drinks ItemsAdder item + PNG using {@code ia_item_id}.
+ * Remove a realm drinks ItemsAdder item + PNG using {@code ia_item_id}.
  */
 public final class IaDrinksRemover {
 
@@ -30,13 +28,14 @@ public final class IaDrinksRemover {
 			return false;
 		}
 		String stem = raw;
+		String expectedNs = DrinksNamespace.current();
 		int colon = raw.indexOf(':');
 		if (colon >= 0) {
 			String ns = raw.substring(0, colon).trim().toLowerCase(Locale.ROOT);
 			stem = raw.substring(colon + 1).trim();
-			if (!"tfmc_drinks".equals(ns)) {
+			if (!expectedNs.equals(ns)) {
 				if (log != null) {
-					log.warning("[ia] refusing to delete non-tfmc_drinks item: " + raw);
+					log.warning("[ia] refusing to delete non-" + expectedNs + " item: " + raw);
 				}
 				return false;
 			}
@@ -45,7 +44,7 @@ public final class IaDrinksRemover {
 			throw new IOException("invalid ia_item_id stem: " + raw);
 		}
 
-		File root = IaDrinksWriter.resolvePath(plugin, Cache.itemsAdderTfmcDrinks);
+		File root = IaDrinksWriter.resolveDrinksRoot(plugin);
 		boolean changed = false;
 
 		File itemsYml = new File(root, "configs/items.yml");
@@ -62,7 +61,10 @@ public final class IaDrinksRemover {
 			}
 		}
 
-		File png = new File(root, "resourcepack/tfmc_drinks/textures/item/" + stem + ".png");
+		File png = new File(
+			root,
+			"resourcepack/" + expectedNs + "/textures/item/" + stem + ".png"
+		);
 		if (png.isFile()) {
 			if (!png.delete()) {
 				throw new IOException("could not delete " + png.getAbsolutePath());

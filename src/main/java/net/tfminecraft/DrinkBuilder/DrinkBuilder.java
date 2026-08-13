@@ -15,7 +15,6 @@ import net.tfminecraft.DrinkBuilder.loaders.ConfigLoader;
 import net.tfminecraft.DrinkBuilder.loaders.IngredientsLoader;
 import net.tfminecraft.DrinkBuilder.loaders.PermissionGroupsLoader;
 import net.tfminecraft.DrinkBuilder.managers.CommandManager;
-import net.tfminecraft.DrinkBuilder.managers.PlayerJoinMetaListener;
 import net.tfminecraft.DrinkBuilder.pack.CmdAllocator;
 import net.tfminecraft.DrinkBuilder.pack.DeferredDrinkIaReload;
 import net.tfminecraft.DrinkBuilder.pack.IaDrinksScaffold;
@@ -31,7 +30,6 @@ public class DrinkBuilder extends JavaPlugin {
 	private final CategoriesLoader categoriesLoader = new CategoriesLoader();
 	private final PermissionGroupsLoader permissionGroupsLoader = new PermissionGroupsLoader();
 	private final CommandManager commandManager = new CommandManager();
-	private final PlayerJoinMetaListener joinMetaListener = new PlayerJoinMetaListener();
 	private CmdAllocator cmdAllocator;
 	private PendingReloadQueue pendingReloadQueue;
 	private DeferredDrinkIaReload deferredIaReload;
@@ -60,7 +58,6 @@ public class DrinkBuilder extends JavaPlugin {
 			getLogger().severe("Command drinkbuilder missing from plugin.yml");
 		}
 
-		getServer().getPluginManager().registerEvents(joinMetaListener, this);
 		getServer().getPluginManager().registerEvents(deferredIaReload, this);
 		ItemsAdderPackListener.registerIfPresent(deferredIaReload);
 		CatalogSyncService.pushAsync(this);
@@ -79,8 +76,6 @@ public class DrinkBuilder extends JavaPlugin {
 				+ cmdAllocator.peekNext()
 				+ ", pendingIa="
 				+ pendingReloadQueue.size()
-				+ ", api="
-				+ (Cache.apiBaseUrl.isEmpty() ? "(unset)" : Cache.apiBaseUrl)
 				+ ")"
 		);
 	}

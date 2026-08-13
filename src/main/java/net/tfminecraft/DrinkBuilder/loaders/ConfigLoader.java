@@ -20,19 +20,6 @@ public final class ConfigLoader {
 			return;
 		}
 
-		String base = config.getString("api.base-url", "");
-		if (base == null) {
-			base = "";
-		}
-		base = base.trim();
-		while (base.endsWith("/")) {
-			base = base.substring(0, base.length() - 1);
-		}
-		Cache.apiBaseUrl = base;
-
-		String key = config.getString("api.plugin-key", "");
-		Cache.pluginKey = key == null ? "" : key.trim();
-
 		String brewery = config.getString("paths.breweryx-folder", "plugins/BreweryX");
 		Cache.breweryxFolder = brewery == null ? "plugins/BreweryX" : brewery.trim();
 
