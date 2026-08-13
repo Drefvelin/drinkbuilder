@@ -219,6 +219,17 @@ public final class ProvinceSystemClient {
 		return putJson("/drinks/plugin/player-meta", jsonBody);
 	}
 
+	/**
+	 * Upload a drink creator asset PNG (glass_bottle.png / potion_overlay.png).
+	 */
+	public static SimpleResult putDrinkAsset(String fileName, byte[] pngBytes) {
+		String name = fileName == null ? "" : fileName.trim();
+		if (name.isEmpty() || pngBytes == null || pngBytes.length == 0) {
+			return SimpleResult.fail("asset name and PNG bytes required");
+		}
+		return putBytes("/drinks/plugin/assets/" + name, pngBytes, "image/png");
+	}
+
 	public static ListResult listPendingApply() {
 		SimpleResult raw = getJson("/drinks/plugin/pending-apply");
 		if (!raw.ok) {
@@ -590,6 +601,58 @@ public final class ProvinceSystemClient {
 
 	private static SimpleResult putJson(String path, String jsonBody) {
 		return request("PUT", path, jsonBody, false);
+	}
+
+	private static SimpleResult putBytes(String path, byte[] body, String contentType) {
+		String base = Cache.apiBaseUrl;
+		String key = Cache.pluginKey;
+		if (base == null || base.isEmpty() || key == null || key.isEmpty()) {
+			return SimpleResult.fail(
+				"API is not configured (api.base-url / api.plugin-key in config.yml)."
+			);
+		}
+		if (body == null || body.length == 0) {
+			return SimpleResult.fail("Payload is empty.");
+		}
+		HttpURLConnection connection = null;
+		try {
+			@SuppressWarnings("deprecation")
+			URL url = new URL(base + path);
+			connection = (HttpURLConnection) url.openConnection();
+			connection.setRequestMethod("PUT");
+			connection.setConnectTimeout(TIMEOUT_MS);
+			connection.setReadTimeout(DOWNLOAD_TIMEOUT_MS);
+			connection.setRequestProperty("X-Plugin-Key", key);
+			connection.setRequestProperty("Accept", "application/json");
+			connection.setDoOutput(true);
+			connection.setRequestProperty(
+				"Content-Type",
+				contentType == null || contentType.isBlank()
+					? "application/octet-stream"
+					: contentType
+			);
+			connection.setFixedLengthStreamingMode(body.length);
+			try (OutputStream out = connection.getOutputStream()) {
+				out.write(body);
+			}
+
+			int status = connection.getResponseCode();
+			String response = readBody(
+				status >= 200 && status < 300
+					? connection.getInputStream()
+					: connection.getErrorStream()
+			);
+			if (status >= 200 && status < 300) {
+				return SimpleResult.success(response);
+			}
+			return SimpleResult.fail(detailOrHttp(response, status));
+		} catch (Exception e) {
+			return SimpleResult.fail("Could not reach API: " + e.getMessage());
+		} finally {
+			if (connection != null) {
+				connection.disconnect();
+			}
+		}
 	}
 
 	private static SimpleResult postJson(String path, String jsonBody) {

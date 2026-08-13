@@ -55,11 +55,8 @@ public final class RecipesYmlMerger {
 		Map<String, Object> recipe = drink.recipe;
 		ConfigurationSection section = recipes.createSection(key);
 
-		String names = stringVal(recipe.get("names"));
 		String display = drink.displayName == null ? key : drink.displayName.trim();
-		if (names == null || names.isBlank()) {
-			names = display + "/" + display + "/" + display;
-		}
+		String names = bakeQualityNames(recipe, display);
 		section.set("name", names);
 		section.set("enabled", true);
 
@@ -83,17 +80,23 @@ public final class RecipesYmlMerger {
 		setInt(section, "difficulty", recipe.get("difficulty"), 1);
 		setInt(section, "alcohol", recipe.get("alcohol"), 0);
 
-		List<String> lore = stringList(recipe.get("lore"));
+		List<String> lore = bakeLore(recipe.get("lore"));
 		if (!lore.isEmpty()) {
 			section.set("lore", lore);
 		}
 		String drinkMessage = stringVal(recipe.get("drink_message"));
 		if (drinkMessage != null && !drinkMessage.isBlank()) {
-			section.set("drinkmessage", drinkMessage);
+			section.set(
+				"drinkmessage",
+				bakeColourStops(drinkMessage, colourList(recipe.get("drink_message_colours")))
+			);
 		}
 		String drinkTitle = stringVal(recipe.get("drink_title"));
 		if (drinkTitle != null && !drinkTitle.isBlank()) {
-			section.set("drinktitle", drinkTitle);
+			section.set(
+				"drinktitle",
+				bakeColourStops(drinkTitle, colourList(recipe.get("drink_title_colours")))
+			);
 		}
 		if (Boolean.TRUE.equals(asBoolean(recipe.get("glint")))) {
 			section.set("glint", true);
@@ -267,7 +270,72 @@ public final class RecipesYmlMerger {
 		return out;
 	}
 
-	private static List<String> stringList(Object raw) {
+	private static String bakeQualityNames(Map<String, Object> recipe, String display) {
+		String names = stringVal(recipe.get("names"));
+		String bad;
+		String normal;
+		String good;
+		if (names == null || names.isBlank()) {
+			bad = display;
+			normal = display;
+			good = display;
+		} else {
+			String[] parts = names.split("/", -1);
+			if (parts.length == 3) {
+				bad = parts[0].trim();
+				normal = parts[1].trim();
+				good = parts[2].trim();
+			} else {
+				bad = display;
+				normal = display;
+				good = display;
+			}
+		}
+		if (bad.isEmpty()) {
+			bad = display;
+		}
+		if (normal.isEmpty()) {
+			normal = display;
+		}
+		if (good.isEmpty()) {
+			good = display;
+		}
+		List<String> badColours = colourList(recipe.get("name_bad_colours"));
+		List<String> normalColours = colourList(recipe.get("name_colours"));
+		List<String> goodColours = colourList(recipe.get("name_good_colours"));
+		return bakeColourStops(bad, badColours)
+			+ "/"
+			+ bakeColourStops(normal, normalColours)
+			+ "/"
+			+ bakeColourStops(good, goodColours);
+	}
+
+	private static List<String> bakeLore(Object raw) {
+		List<String> out = new ArrayList<>();
+		if (!(raw instanceof List<?> list)) {
+			return out;
+		}
+		for (Object row : list) {
+			if (row instanceof Map<?, ?> map) {
+				String text = firstString(map, "text");
+				if (text == null || text.isBlank()) {
+					continue;
+				}
+				out.add(bakeColourStops(text, colourList(map.get("colours"))));
+				continue;
+			}
+			if (row == null) {
+				continue;
+			}
+			String s = String.valueOf(row).trim();
+			if (!s.isEmpty()) {
+				out.add(s);
+			}
+		}
+		return out;
+	}
+
+	private static List<String> colourList(Object raw) {
 		List<String> out = new ArrayList<>();
 		if (!(raw instanceof List<?> list)) {
 			return out;
@@ -282,6 +350,64 @@ public final class RecipesYmlMerger {
 			}
 		}
 		return out;
+	}
+
+	/**
+	 * Evenly split characters across colour stops; emit &#rrggbb prefixes (TFMC style).
+	 */
+	static String bakeColourStops(String plain, List<String> colours) {
+		String text = plain == null ? "" : plain;
+		if (text.isEmpty() || colours == null || colours.isEmpty()) {
+			return text;
+		}
+		List<String> hexes = new ArrayList<>();
+		for (String token : colours) {
+			String hex = normalizeHex(token);
+			if (hex != null) {
+				hexes.add(hex);
+			}
+		}
+		if (hexes.isEmpty()) {
+			return text;
+		}
+		int n = text.length();
+		int stops = hexes.size();
+		StringBuilder out = new StringBuilder(n * 10);
+		for (int i = 0; i < n; i++) {
+			int idx = stops == 1 ? 0 : (int) Math.floor((double) i * (stops - 1) / Math.max(1, n - 1));
+			if (idx < 0) {
+				idx = 0;
+			}
+			if (idx >= stops) {
+				idx = stops - 1;
+			}
+			out.append("&#").append(hexes.get(idx));
+			out.append(text.charAt(i));
+		}
+		return out.toString();
+	}
+
+	private static String normalizeHex(String token) {
+		if (token == null) {
+			return null;
+		}
+		String t = token.trim();
+		if (t.startsWith("#")) {
+			t = t.substring(1);
+		}
+		if (t.length() != 6) {
+			return null;
+		}
+		for (int i = 0; i < 6; i++) {
+			char c = t.charAt(i);
+			boolean ok = (c >= '0' && c <= '9')
+				|| (c >= 'a' && c <= 'f')
+				|| (c >= 'A' && c <= 'F');
+			if (!ok) {
+				return null;
+			}
+		}
+		return t.toLowerCase(Locale.ROOT);
 	}
 
 	private static String firstString(Map<?, ?> map, String... keys) {

@@ -2,7 +2,6 @@ package net.tfminecraft.DrinkBuilder.loaders;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -54,25 +53,5 @@ public final class ConfigLoader {
 		}
 
 		Cache.iaReloadDelaySeconds = Math.max(0, config.getInt("ia-reload-delay-seconds", 8));
-
-		List<String> perms = Cache.newStringList();
-		List<?> raw = config.getList("texture-permissions");
-		if (raw != null) {
-			for (Object item : raw) {
-				if (item == null) {
-					continue;
-				}
-				String node = String.valueOf(item).trim();
-				if (!node.isEmpty()) {
-					perms.add(node);
-				}
-			}
-		}
-		if (perms.isEmpty()) {
-			perms.add("rpchar.group.gilded");
-			perms.add("rpchar.group.ascended");
-			perms.add("rpchar.group.legacy");
-		}
-		Cache.texturePermissions = List.copyOf(perms);
 	}
 }

@@ -16,8 +16,4 @@ cmd:
 # Seconds to wait after /iareload before /iazip (texture drinks).
 ia-reload-delay-seconds: 8
 
-# Any matching Bukkit permission → allow_drink_texture on ProvinceSystem.
-texture-permissions:
-  - rpchar.group.gilded
-  - rpchar.group.ascended
-  - rpchar.group.legacy
+# Rank entitlements (name colour stops + texture) live in permission-groups.yml.

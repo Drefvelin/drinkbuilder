@@ -1,38 +1,20 @@
 package net.tfminecraft.DrinkBuilder.entitlements;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import net.tfminecraft.DrinkBuilder.Cache;
 import net.tfminecraft.DrinkBuilder.DrinkBuilder;
 import net.tfminecraft.DrinkBuilder.api.ProvinceSystemClient;
 import net.tfminecraft.DrinkBuilder.api.ProvinceSystemClient.SimpleResult;
 
 /**
- * Push allow_drink_texture to ProvinceSystem (fail-soft).
+ * Push allow_drink_texture + name_colour_stops to ProvinceSystem (fail-soft).
  */
 public final class PlayerMetaSyncService {
 
 	private PlayerMetaSyncService() {}
-
-	public static boolean allowDrinkTexture(Player player) {
-		if (player == null) {
-			return false;
-		}
-		List<String> nodes = Cache.texturePermissions;
-		if (nodes == null) {
-			return false;
-		}
-		for (String node : nodes) {
-			if (node != null && !node.isBlank() && player.hasPermission(node.trim())) {
-				return true;
-			}
-		}
-		return false;
-	}
 
 	public static void pushForPlayer(Player player) {
 		if (player == null) {
@@ -70,9 +52,12 @@ public final class PlayerMetaSyncService {
 		if (online == null || !online.isOnline()) {
 			return;
 		}
-		boolean allow = allowDrinkTexture(online);
+		boolean allow = PermissionGroupService.getAllowDrinkTexture(online);
+		int stops = PermissionGroupService.getNameColourStops(online);
 		String body = "{\"player_uuid\":\"" + playerUuid
-			+ "\",\"allow_drink_texture\":" + allow + "}";
+			+ "\",\"allow_drink_texture\":" + allow
+			+ ",\"name_colour_stops\":" + stops
+			+ "}";
 		SimpleResult result = ProvinceSystemClient.pushPlayerMeta(body);
 		if (!result.ok && DrinkBuilder.plugin != null) {
 			DrinkBuilder.plugin.getLogger().warning(

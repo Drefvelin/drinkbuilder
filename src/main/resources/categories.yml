@@ -1,0 +1,10 @@
+# Display labels for ingredient category ids (catalog → website).
+categories:
+  grain: Grain
+  sweetener: Sweetener
+  produce: Produce
+  spice: Spice
+  dairy: Dairy
+  pantry: Pantry
+  exotic: Exotic
+  other: Other

@@ -1,12 +1,19 @@
 package net.tfminecraft.DrinkBuilder;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import net.tfminecraft.DrinkBuilder.catalog.AssetSyncService;
 import net.tfminecraft.DrinkBuilder.catalog.CatalogSyncService;
+import net.tfminecraft.DrinkBuilder.loaders.CategoriesLoader;
 import net.tfminecraft.DrinkBuilder.loaders.ConfigLoader;
 import net.tfminecraft.DrinkBuilder.loaders.IngredientsLoader;
+import net.tfminecraft.DrinkBuilder.loaders.PermissionGroupsLoader;
 import net.tfminecraft.DrinkBuilder.managers.CommandManager;
 import net.tfminecraft.DrinkBuilder.managers.PlayerJoinMetaListener;
 import net.tfminecraft.DrinkBuilder.pack.CmdAllocator;
@@ -21,6 +28,8 @@ public class DrinkBuilder extends JavaPlugin {
 
 	private final ConfigLoader configLoader = new ConfigLoader();
 	private final IngredientsLoader ingredientsLoader = new IngredientsLoader();
+	private final CategoriesLoader categoriesLoader = new CategoriesLoader();
+	private final PermissionGroupsLoader permissionGroupsLoader = new PermissionGroupsLoader();
 	private final CommandManager commandManager = new CommandManager();
 	private final PlayerJoinMetaListener joinMetaListener = new PlayerJoinMetaListener();
 	private CmdAllocator cmdAllocator;
@@ -55,10 +64,15 @@ public class DrinkBuilder extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(deferredIaReload, this);
 		ItemsAdderPackListener.registerIfPresent(deferredIaReload);
 		CatalogSyncService.pushAsync(this);
+		AssetSyncService.pushAsync(this);
 
 		getLogger().info(
 			"DrinkBuilder enabled (ingredients="
 				+ Cache.ingredients.size()
+				+ ", categories="
+				+ Cache.categories.size()
+				+ ", groups="
+				+ Cache.permissionGroups.size()
 				+ ", blacklist="
 				+ Cache.effectsBlacklist.size()
 				+ ", nextCmd="
@@ -86,6 +100,8 @@ public class DrinkBuilder extends JavaPlugin {
 
 	public void reloadAll() {
 		configLoader.load(new File(getDataFolder(), "config.yml"));
+		permissionGroupsLoader.load(new File(getDataFolder(), "permission-groups.yml"));
+		categoriesLoader.load(new File(getDataFolder(), "categories.yml"));
 		ingredientsLoader.loadIngredients(new File(getDataFolder(), "ingredients.yml"));
 		ingredientsLoader.loadEffectsBlacklist(
 			new File(getDataFolder(), "effects-blacklist.yml")
@@ -100,12 +116,38 @@ public class DrinkBuilder extends JavaPlugin {
 		saveIfMissing("config.yml");
 		saveIfMissing("ingredients.yml");
 		saveIfMissing("effects-blacklist.yml");
+		saveIfMissing("categories.yml");
+		saveIfMissing("permission-groups.yml");
+		saveAssetIfMissing("glass_bottle.png");
+		saveAssetIfMissing("potion_overlay.png");
+		saveAssetIfMissing("README.txt");
 	}
 
 	private void saveIfMissing(String name) {
 		File out = new File(getDataFolder(), name);
 		if (!out.exists()) {
 			saveResource(name, false);
+		}
+	}
+
+	private void saveAssetIfMissing(String fileName) {
+		File assetsDir = new File(getDataFolder(), "assets");
+		if (!assetsDir.exists() && !assetsDir.mkdirs()) {
+			getLogger().warning("Could not create assets folder");
+			return;
+		}
+		File out = new File(assetsDir, fileName);
+		if (out.exists()) {
+			return;
+		}
+		String resourcePath = "assets/" + fileName;
+		try (InputStream in = getResource(resourcePath)) {
+			if (in == null) {
+				return;
+			}
+			Files.copy(in, out.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			getLogger().warning("Could not copy asset " + fileName + ": " + e.getMessage());
 		}
 	}
 }

@@ -1,5 +1,6 @@
 package net.tfminecraft.DrinkBuilder.catalog;
 
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
@@ -43,7 +44,26 @@ public final class CatalogSyncService {
 				sb.append('}');
 			}
 		}
-		sb.append("],\"effects_blacklist\":[");
+		sb.append("],\"categories\":{");
+		first = true;
+		Map<String, String> categories = Cache.categories;
+		if (categories != null) {
+			for (Map.Entry<String, String> entry : categories.entrySet()) {
+				if (entry.getKey() == null || entry.getKey().isBlank()) {
+					continue;
+				}
+				if (!first) {
+					sb.append(',');
+				}
+				first = false;
+				String label = entry.getValue() == null || entry.getValue().isBlank()
+					? entry.getKey()
+					: entry.getValue();
+				sb.append('"').append(escape(entry.getKey())).append("\":\"")
+					.append(escape(label)).append('"');
+			}
+		}
+		sb.append("},\"effects_blacklist\":[");
 		first = true;
 		if (Cache.effectsBlacklist != null) {
 			for (String effect : Cache.effectsBlacklist) {

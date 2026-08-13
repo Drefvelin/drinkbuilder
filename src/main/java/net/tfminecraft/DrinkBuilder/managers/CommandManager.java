@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import net.tfminecraft.DrinkBuilder.Cache;
 import net.tfminecraft.DrinkBuilder.DrinkBuilder;
 import net.tfminecraft.DrinkBuilder.api.ProvinceSystemClient.CatalogPushResult;
+import net.tfminecraft.DrinkBuilder.catalog.AssetSyncService;
 import net.tfminecraft.DrinkBuilder.catalog.CatalogSyncService;
 import net.tfminecraft.DrinkBuilder.entitlements.PlayerMetaSyncService;
 import net.tfminecraft.DrinkBuilder.pack.DeletableDrinkCache;
@@ -49,9 +50,12 @@ public final class CommandManager implements CommandExecutor, TabCompleter {
 			plugin.reloadAll();
 			sender.sendMessage(ChatColor.GREEN + "DrinkBuilder reloaded ("
 				+ Cache.ingredients.size() + " ingredients, "
+				+ Cache.categories.size() + " categories, "
+				+ Cache.permissionGroups.size() + " permission groups, "
 				+ Cache.effectsBlacklist.size() + " blacklisted effects). "
 				+ "Next CMD: " + plugin.getCmdAllocator().peekNext());
 			CatalogSyncService.pushAsync(plugin);
+			AssetSyncService.pushAsync(plugin);
 			PlayerMetaSyncService.pushAllOnlineAsync();
 			return true;
 		}
@@ -66,13 +70,14 @@ public final class CommandManager implements CommandExecutor, TabCompleter {
 				sender.sendMessage(ChatColor.RED + "Plugin not ready.");
 				return true;
 			}
-			sender.sendMessage(ChatColor.YELLOW + "Syncing drink catalog…");
+			sender.sendMessage(ChatColor.YELLOW + "Syncing drink catalog + assets…");
 			Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
 				CatalogPushResult result = CatalogSyncService.pushNow();
+				AssetSyncService.pushAsync(plugin);
 				Bukkit.getScheduler().runTask(plugin, () -> {
 					if (result.ok) {
 						sender.sendMessage(ChatColor.GREEN + "Catalog synced: "
-							+ result.ingredients + " ingredients.");
+							+ result.ingredients + " ingredients. Assets sync started.");
 					} else {
 						sender.sendMessage(ChatColor.RED + "Catalog sync failed: "
 							+ result.error);

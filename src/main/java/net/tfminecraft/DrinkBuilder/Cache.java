@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
+import net.tfminecraft.DrinkBuilder.objects.PermissionGroupDefinition;
 
 /**
  * Runtime settings loaded from config / ingredients / blacklist YAML.
@@ -19,13 +22,12 @@ public final class Cache {
 	public static int cmdMin = 20000;
 	public static int cmdMax = 29999;
 
-	public static List<String> texturePermissions = List.of(
-		"rpchar.group.gilded",
-		"rpchar.group.ascended",
-		"rpchar.group.legacy"
-	);
+	public static int defaultNameColourStops = 0;
+	public static boolean defaultAllowDrinkTexture = false;
+	public static List<PermissionGroupDefinition> permissionGroups = List.of();
 
 	public static List<Ingredient> ingredients = Collections.emptyList();
+	public static Map<String, String> categories = Map.of();
 	public static List<String> effectsBlacklist = Collections.emptyList();
 	public static int catalogVersion = 1;
 
