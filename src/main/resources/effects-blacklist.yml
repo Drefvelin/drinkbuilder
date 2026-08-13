@@ -1,0 +1,15 @@
+# Effects that players must not put on donator drinks (lowercase for PS catalog).
+# Ported from legacy DrinkBuilder config.
+effects:
+  - absorption
+  - dolphins_grace
+  - fire_resistance
+  - haste
+  - health_boost
+  - instant_health
+  - invisibility
+  - regeneration
+  - resistance
+  - saturation
+  - speed
+  - strength

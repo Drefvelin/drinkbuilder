@@ -1,0 +1,23 @@
+# ProvinceSystem API (plugin key). Do not commit real production secrets.
+api:
+  base-url: "http://127.0.0.1:18001"
+  plugin-key: "dev-plugin-key"
+
+# Relative to the server root (plugins/..).
+paths:
+  breweryx-folder: "plugins/BreweryX"
+  itemsadder-tfmc-drinks: "plugins/ItemsAdder/contents/tfmc_drinks"
+
+# Reserved custom model data range for tfmc_drinks potions.
+cmd:
+  min: 20000
+  max: 29999
+
+# Seconds to wait after /iareload before /iazip (texture drinks).
+ia-reload-delay-seconds: 8
+
+# Any matching Bukkit permission → allow_drink_texture on ProvinceSystem.
+texture-permissions:
+  - rpchar.group.gilded
+  - rpchar.group.ascended
+  - rpchar.group.legacy

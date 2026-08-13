@@ -1,0 +1,35 @@
+# Maven
+target/
+
+# IDE
+*.iml
+.idea/
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+nbproject/private/
+.vscode/
+*.bak
+*.swp
+*.tmp
+
+# Build / NetBeans leftovers
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs / classes
+*.log
+*.class
+
+# Runtime state if ever written under the project tree
+cmd-state.yml
+pending-reload.yml

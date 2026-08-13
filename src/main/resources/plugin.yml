@@ -1,0 +1,20 @@
+main: net.tfminecraft.DrinkBuilder.DrinkBuilder
+api-version: 1.20
+name: DrinkBuilder
+version: 1.0
+author: TFMC
+
+depend: [TLibs]
+softdepend: [ItemsAdder]
+
+commands:
+  drinkbuilder:
+    usage: /drinkbuilder reload|catalog sync|pack pull [force]|drink delete <id>
+    description: DrinkBuilder admin tools
+    permission: drinkbuilder.admin
+    permission-message: You do not have permission to use /drinkbuilder.
+
+permissions:
+  drinkbuilder.admin:
+    description: Admin /drinkbuilder commands
+    default: op
