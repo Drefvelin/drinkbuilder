@@ -107,7 +107,7 @@ public final class PackPullRunner {
 				CmdAllocator allocator = plugin.getCmdAllocator();
 				for (PendingDrink drink : list.submissions) {
 					try {
-						boolean wroteIa = applyOne(plugin, drink, allocator, log);
+						boolean wroteIa = applyDrink(plugin, drink, allocator, log);
 						written++;
 						if (wroteIa) {
 							needIa.add(drink.id.trim());
@@ -132,8 +132,8 @@ public final class PackPullRunner {
 		return true;
 	}
 
-	private static boolean applyOne(
-		DrinkBuilder plugin,
+	static boolean applyDrink(
+		JavaPlugin plugin,
 		PendingDrink drink,
 		CmdAllocator allocator,
 		Logger log

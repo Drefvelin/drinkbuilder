@@ -8,7 +8,7 @@ depend: [TLibs, TFMCWeb]
 softdepend: [ItemsAdder]
 commands:
   drinkbuilder:
-    usage: /drinkbuilder reload|catalog sync|pack pull [force]|drink delete <id>
+    usage: /drinkbuilder reload|catalog sync|pack pull [force]|pack reapply <id>|drink delete <id>
     description: DrinkBuilder admin tools
     permission: drinkbuilder.admin
     permission-message: You do not have permission to use /drinkbuilder.

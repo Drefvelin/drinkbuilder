@@ -21,6 +21,7 @@ import net.tfminecraft.DrinkBuilder.catalog.CatalogSyncService;
 import net.tfminecraft.DrinkBuilder.pack.DeletableDrinkCache;
 import net.tfminecraft.DrinkBuilder.pack.DrinkDeleteRunner;
 import net.tfminecraft.DrinkBuilder.pack.PackPullRunner;
+import net.tfminecraft.DrinkBuilder.pack.PackReapplyRunner;
 import net.tfminecraft.DrinkBuilder.utils.Permissions;
 
 public final class CommandManager implements CommandExecutor, TabCompleter {
@@ -35,7 +36,7 @@ public final class CommandManager implements CommandExecutor, TabCompleter {
 		}
 		if (args.length == 0) {
 			sender.sendMessage(ChatColor.AQUA
-				+ "Usage: /drinkbuilder reload|catalog sync|pack pull [force]|drink delete <id>");
+				+ "Usage: /drinkbuilder reload|catalog sync|pack pull [force]|pack reapply <id>|drink delete <id>");
 			return true;
 		}
 
@@ -86,8 +87,32 @@ public final class CommandManager implements CommandExecutor, TabCompleter {
 		}
 
 		if ("pack".equals(sub)) {
-			if (args.length < 2 || !"pull".equalsIgnoreCase(args[1].trim())) {
-				sender.sendMessage(ChatColor.AQUA + "Usage: /drinkbuilder pack pull [force]");
+			if (args.length < 2) {
+				sender.sendMessage(ChatColor.AQUA
+					+ "Usage: /drinkbuilder pack pull [force]|pack reapply <id>");
+				return true;
+			}
+			String action = args[1].trim().toLowerCase(Locale.ROOT);
+			if ("reapply".equals(action)) {
+				if (args.length < 3 || args[2].trim().isEmpty()) {
+					sender.sendMessage(ChatColor.AQUA + "Usage: /drinkbuilder pack reapply <id>");
+					return true;
+				}
+				String id = args[2].trim();
+				DrinkBuilder plugin = DrinkBuilder.plugin;
+				if (plugin == null) {
+					sender.sendMessage(ChatColor.RED + "Plugin not ready.");
+					return true;
+				}
+				sender.sendMessage(ChatColor.YELLOW + "Reapplying drink " + id + "…");
+				PackReapplyRunner.run(id, result -> sender.sendMessage(
+					result.ok ? ChatColor.GREEN + result.message : ChatColor.RED + result.message
+				));
+				return true;
+			}
+			if (!"pull".equals(action)) {
+				sender.sendMessage(ChatColor.AQUA
+					+ "Usage: /drinkbuilder pack pull [force]|pack reapply <id>");
 				return true;
 			}
 			boolean force = args.length >= 3 && "force".equalsIgnoreCase(args[2].trim());
@@ -132,7 +157,7 @@ public final class CommandManager implements CommandExecutor, TabCompleter {
 		}
 
 		sender.sendMessage(ChatColor.AQUA
-			+ "Usage: /drinkbuilder reload|catalog sync|pack pull [force]|drink delete <id>");
+			+ "Usage: /drinkbuilder reload|catalog sync|pack pull [force]|pack reapply <id>|drink delete <id>");
 		return true;
 	}
 
@@ -177,6 +202,9 @@ public final class CommandManager implements CommandExecutor, TabCompleter {
 			if ("pull".startsWith(p)) {
 				return Collections.singletonList("pull");
 			}
+			if ("reapply".startsWith(p)) {
+				return Collections.singletonList("reapply");
+			}
 		}
 		if (args.length == 2 && "drink".equalsIgnoreCase(args[0])) {
 			String p = args[1].toLowerCase(Locale.ROOT);
@@ -191,6 +219,18 @@ public final class CommandManager implements CommandExecutor, TabCompleter {
 			if ("force".startsWith(p)) {
 				return Collections.singletonList("force");
 			}
+		}
+		if (args.length == 3
+			&& "pack".equalsIgnoreCase(args[0])
+			&& "reapply".equalsIgnoreCase(args[1])) {
+			String p = args[2].toLowerCase(Locale.ROOT);
+			List<String> out = new ArrayList<>();
+			for (String id : DeletableDrinkCache.snapshot()) {
+				if (id != null && id.toLowerCase(Locale.ROOT).startsWith(p)) {
+					out.add(id);
+				}
+			}
+			return out;
 		}
 		if (args.length == 3
 			&& "drink".equalsIgnoreCase(args[0])

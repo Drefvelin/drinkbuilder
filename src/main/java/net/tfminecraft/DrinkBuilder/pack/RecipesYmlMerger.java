@@ -360,38 +360,63 @@ public final class RecipesYmlMerger {
 	}
 
 	/**
-	 * Evenly split characters across colour stops; emit &#rrggbb prefixes (TFMC style).
+	 * RGB-interpolated gradient across the string; emit &#rrggbb prefixes (TFMC style).
+	 * Matches website previewSpans / TLibs applyColourGradient.
 	 */
 	static String bakeColourStops(String plain, List<String> colours) {
 		String text = plain == null ? "" : plain;
 		if (text.isEmpty() || colours == null || colours.isEmpty()) {
 			return text;
 		}
-		List<String> hexes = new ArrayList<>();
+		List<int[]> rgbStops = new ArrayList<>();
 		for (String token : colours) {
 			String hex = normalizeHex(token);
 			if (hex != null) {
-				hexes.add(hex);
+				rgbStops.add(parseRgb(hex));
 			}
 		}
-		if (hexes.isEmpty()) {
+		if (rgbStops.isEmpty()) {
 			return text;
 		}
-		int n = text.length();
-		int stops = hexes.size();
-		StringBuilder out = new StringBuilder(n * 10);
-		for (int i = 0; i < n; i++) {
-			int idx = stops == 1 ? 0 : (int) Math.floor((double) i * (stops - 1) / Math.max(1, n - 1));
-			if (idx < 0) {
-				idx = 0;
+		int length = text.length();
+		StringBuilder out = new StringBuilder(length * 10);
+		if (rgbStops.size() == 1) {
+			String hex = formatRgb(rgbStops.get(0));
+			for (int i = 0; i < length; i++) {
+				out.append("&#").append(hex).append(text.charAt(i));
 			}
-			if (idx >= stops) {
-				idx = stops - 1;
+			return out.toString();
+		}
+		int stops = rgbStops.size();
+		for (int i = 0; i < length; i++) {
+			double t = length == 1 ? 0.0 : (double) i / (length - 1);
+			int segment = (int) Math.floor(t * (stops - 1));
+			if (segment >= stops - 1) {
+				segment = stops - 2;
 			}
-			out.append("&#").append(hexes.get(idx));
-			out.append(text.charAt(i));
+			double localT = t * (stops - 1) - segment;
+			String hex = formatRgb(lerpRgb(rgbStops.get(segment), rgbStops.get(segment + 1), localT));
+			out.append("&#").append(hex).append(text.charAt(i));
 		}
 		return out.toString();
+	}
+
+	private static int[] parseRgb(String hex) {
+		int v = Integer.parseInt(hex, 16);
+		return new int[] {(v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff};
+	}
+
+	private static String formatRgb(int[] rgb) {
+		return String.format(Locale.ROOT, "%02x%02x%02x", rgb[0], rgb[1], rgb[2]);
+	}
+
+	private static int[] lerpRgb(int[] from, int[] to, double t) {
+		double c = Math.max(0.0, Math.min(1.0, t));
+		return new int[] {
+			(int) Math.round(from[0] + (to[0] - from[0]) * c),
+			(int) Math.round(from[1] + (to[1] - from[1]) * c),
+			(int) Math.round(from[2] + (to[2] - from[2]) * c),
+		};
 	}
 
 	private static String normalizeHex(String token) {
