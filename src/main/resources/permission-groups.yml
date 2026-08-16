@@ -3,12 +3,14 @@
 # Resolve (player):
 #   name-colour-stops = MAX across matching groups (else defaults)
 #   allow-drink-texture = true if ANY matching group has it true (else defaults)
+#   allow-drink-message = true if ANY matching group has it true (else defaults)
 #
 # Web hard-caps colour stops at 8.
 
 defaults:
   name-colour-stops: 0
   allow-drink-texture: false
+  allow-drink-message: false
 
 groups:
   noble:
@@ -26,8 +28,10 @@ groups:
     permission: rpchar.group.ascended
     name-colour-stops: 8
     allow-drink-texture: true
+    allow-drink-message: true
   legacy:
     tier: 4
     permission: rpchar.group.legacy
     name-colour-stops: 8
     allow-drink-texture: true
+    allow-drink-message: true

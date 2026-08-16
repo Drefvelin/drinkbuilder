@@ -1,6 +1,7 @@
 package net.tfminecraft.DrinkBuilder.catalog;
 
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
@@ -19,19 +20,39 @@ public final class CatalogSyncService {
 
 	private CatalogSyncService() {}
 
-	public static String buildPayloadJson() {
+	public static final class CatalogPayload {
+		public final String json;
+		public final int ingredientCount;
+
+		public CatalogPayload(String json, int ingredientCount) {
+			this.json = json;
+			this.ingredientCount = ingredientCount;
+		}
+	}
+
+	public static CatalogPayload buildPayload() {
+		return buildPayload(null);
+	}
+
+	public static CatalogPayload buildPayload(Logger log) {
 		StringBuilder sb = new StringBuilder(2048);
 		sb.append("{\"ingredients\":[");
 		boolean first = true;
+		int count = 0;
 		if (Cache.ingredients != null) {
 			for (Ingredient ingredient : Cache.ingredients) {
 				if (ingredient == null || ingredient.id.isEmpty()) {
+					continue;
+				}
+				if (!IngredientExistenceChecker.existsInGame(ingredient)) {
+					IngredientExistenceChecker.logSkip(log, ingredient);
 					continue;
 				}
 				if (!first) {
 					sb.append(',');
 				}
 				first = false;
+				count++;
 				sb.append("{\"id\":\"").append(escape(ingredient.id)).append('"');
 				sb.append(",\"brewery_token\":\"")
 					.append(escape(ingredient.breweryToken)).append('"');
@@ -78,28 +99,48 @@ public final class CatalogSyncService {
 			}
 		}
 		sb.append("],\"version\":").append(Cache.catalogVersion).append('}');
-		return sb.toString();
+		return new CatalogPayload(sb.toString(), count);
 	}
 
 	public static void pushAsync(JavaPlugin plugin) {
+		pushAsync(plugin, null);
+	}
+
+	public static void pushAsync(JavaPlugin plugin, Consumer<CatalogPushResult> onDone) {
 		if (plugin == null) {
 			return;
 		}
-		Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-			CatalogPushResult result = pushNow();
+		Bukkit.getScheduler().runTask(plugin, () -> {
 			Logger log = plugin.getLogger();
-			if (result.ok) {
-				log.info("[catalog] synced to ProvinceSystem: ingredients="
-					+ result.ingredients
-					+ (result.updatedAt != null ? (" updated_at=" + result.updatedAt) : ""));
-			} else {
-				log.warning("[catalog] sync failed: " + result.error);
-			}
+			CatalogPayload payload = buildPayload(log);
+			Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+				CatalogPushResult result = pushNow(payload);
+				Bukkit.getScheduler().runTask(plugin, () -> {
+					if (onDone != null) {
+						onDone.accept(result);
+						return;
+					}
+					if (result.ok) {
+						log.info("[catalog] synced to ProvinceSystem: ingredients="
+							+ result.ingredients
+							+ (result.updatedAt != null ? (" updated_at=" + result.updatedAt) : ""));
+					} else {
+						log.warning("[catalog] sync failed: " + result.error);
+					}
+				});
+			});
 		});
 	}
 
 	public static CatalogPushResult pushNow() {
-		return ProvinceSystemClient.pushCatalog(buildPayloadJson());
+		return pushNow(buildPayload());
+	}
+
+	public static CatalogPushResult pushNow(CatalogPayload payload) {
+		if (payload == null) {
+			return CatalogPushResult.fail("catalog payload missing");
+		}
+		return ProvinceSystemClient.pushCatalog(payload.json, payload.ingredientCount);
 	}
 
 	public static void pushAsyncFromPlugin() {

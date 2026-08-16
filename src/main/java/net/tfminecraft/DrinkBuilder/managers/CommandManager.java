@@ -70,18 +70,15 @@ public final class CommandManager implements CommandExecutor, TabCompleter {
 				return true;
 			}
 			sender.sendMessage(ChatColor.YELLOW + "Syncing drink catalog + assets…");
-			Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-				CatalogPushResult result = CatalogSyncService.pushNow();
+			CatalogSyncService.pushAsync(plugin, result -> {
 				AssetSyncService.pushAsync(plugin);
-				Bukkit.getScheduler().runTask(plugin, () -> {
-					if (result.ok) {
-						sender.sendMessage(ChatColor.GREEN + "Catalog synced: "
-							+ result.ingredients + " ingredients. Assets sync started.");
-					} else {
-						sender.sendMessage(ChatColor.RED + "Catalog sync failed: "
-							+ result.error);
-					}
-				});
+				if (result.ok) {
+					sender.sendMessage(ChatColor.GREEN + "Catalog synced: "
+						+ result.ingredients + " ingredients. Assets sync started.");
+				} else {
+					sender.sendMessage(ChatColor.RED + "Catalog sync failed: "
+						+ result.error);
+				}
 			});
 			return true;
 		}

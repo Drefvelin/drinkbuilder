@@ -59,7 +59,7 @@ public final class DeferredDrinkIaReload implements Listener {
 		}
 		if (!force && !Bukkit.getOnlinePlayers().isEmpty()) {
 			plugin.getLogger().info("[ia-reload] " + queue.size()
-				+ " drink(s) pending IA refresh — waiting for empty server");
+				+ " drink(s) pending IA refresh: waiting for empty server");
 			return;
 		}
 
@@ -71,7 +71,7 @@ public final class DeferredDrinkIaReload implements Listener {
 
 		boolean reloadOk = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "iareload");
 		if (!reloadOk) {
-			log.warning("[ia-reload] failed to dispatch iareload — continuing to iazip");
+			log.warning("[ia-reload] failed to dispatch iareload: continuing to iazip");
 		}
 
 		if (delayedZipTask != null) {
@@ -89,7 +89,7 @@ public final class DeferredDrinkIaReload implements Listener {
 			boolean ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "iazip");
 			if (!ok) {
 				inFlight = false;
-				log.severe("[ia-reload] failed to dispatch iazip — will retry later");
+				log.severe("[ia-reload] failed to dispatch iazip: will retry later");
 				return;
 			}
 			if (!itemsAdderPresent) {
@@ -133,7 +133,7 @@ public final class DeferredDrinkIaReload implements Listener {
 			if (!Bukkit.getOnlinePlayers().isEmpty()) {
 				return;
 			}
-			plugin.getLogger().info("[pack] server empty — running drink pack pull");
+			plugin.getLogger().info("[pack] server empty: running drink pack pull");
 			PackPullRunner.run(false, null);
 		});
 	}

@@ -1,5 +1,6 @@
 package net.tfminecraft.DrinkBuilder.pack;
 
+import java.util.Collections;
 import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -88,7 +89,7 @@ public final class PackReapplyRunner {
 					if (wroteIa) {
 						DeferredDrinkIaReload reload = plugin.getDeferredIaReload();
 						if (reload != null) {
-							reload.queue().enqueue(sid);
+							reload.queue().enqueue(Collections.singletonList(sid));
 							reload.requestFlush(true);
 						}
 					}

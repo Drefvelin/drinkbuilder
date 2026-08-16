@@ -195,15 +195,19 @@ public final class ProvinceSystemClient {
 		}
 	}
 
-	public static CatalogPushResult pushCatalog(String jsonBody) {
+	public static CatalogPushResult pushCatalog(String jsonBody, int ingredientCount) {
 		SimpleResult raw = putJson("/drinks/plugin/catalog", jsonBody);
 		if (!raw.ok) {
 			return CatalogPushResult.fail(raw.error);
 		}
 		String body = raw.body == null ? "" : raw.body;
-		int count = Cache.ingredients == null ? 0 : Cache.ingredients.size();
 		String updatedAt = jsonString(body, "updated_at");
-		return CatalogPushResult.success(count, updatedAt);
+		return CatalogPushResult.success(ingredientCount, updatedAt);
+	}
+
+	public static CatalogPushResult pushCatalog(String jsonBody) {
+		int count = Cache.ingredients == null ? 0 : Cache.ingredients.size();
+		return pushCatalog(jsonBody, count);
 	}
 
 	/**
